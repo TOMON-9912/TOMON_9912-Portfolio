@@ -4,10 +4,12 @@ import { notFound } from "next/navigation";
 import {
   ArrowLeft,
   CircleCheck,
+  Code2,
   ExternalLink,
   HeartHandshake,
   Layers,
   Lightbulb,
+  Network,
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
@@ -15,6 +17,8 @@ import {
 import { getProjectBySlug, projects } from "@/content/projects";
 import { siteConfig } from "@/lib/site-config";
 import { GithubIcon } from "@/components/icons/github-icon";
+import { ArchitectureDiagram } from "@/components/project-detail/architecture-diagram";
+import { CodeBlock } from "@/components/project-detail/code-block";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 
@@ -273,8 +277,71 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           </div>
         </section>
 
-        {/* Principles */}
+        {/* Architecture Diagram */}
         <section className="px-4 py-16 sm:px-6 sm:py-20">
+          <div className="mx-auto max-w-5xl space-y-8">
+            <header className="max-w-3xl space-y-3">
+              <p className="inline-flex items-center gap-2 text-sm font-semibold tracking-wider text-primary uppercase">
+                <Network className="size-4" aria-hidden />
+                Architecture Overview
+              </p>
+              <h2 className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
+                4 つの層と「依存の向き」
+              </h2>
+              <p className="text-pretty leading-relaxed text-muted-foreground">
+                外側のレイヤから内側のレイヤへ依存が向かう、クリーンアーキテクチャの典型を採用しています。Domain
+                層を中心に置き、Infrastructure
+                層は依存反転のかたちで Domain
+                のインターフェースを実装する形になっています。これにより、BaaS
+                の差し替えや UI フレームワークの変更が、Domain
+                以下に波及しない構造を保っています。
+              </p>
+            </header>
+
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,0.95fr),minmax(0,1.05fr)] lg:items-start">
+              <ArchitectureDiagram />
+
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    なぜ層を切ったのか
+                  </p>
+                  <ul className="mt-3 space-y-2 text-sm leading-relaxed text-foreground/85">
+                    <li className="border-l-2 border-primary/40 pl-3">
+                      Supabase
+                      に直接依存するコードを Domain / UseCase
+                      層に書かないことで、BaaS
+                      の選定を将来見直せる余地を残す
+                    </li>
+                    <li className="border-l-2 border-primary/40 pl-3">
+                      UseCase
+                      は Repository インターフェースだけに依存するため、テストではモックを差し込むだけで
+                      BaaS なしで実行できる
+                    </li>
+                    <li className="border-l-2 border-primary/40 pl-3">
+                      Server Action
+                      は UseCase を呼び出す薄い入口に留め、責務を「リクエスト処理」に絞る
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="rounded-2xl border border-dashed border-amber-500/40 bg-amber-50/50 p-5 dark:bg-amber-950/20">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                    将来の変更で想定していること
+                  </p>
+                  <ul className="mt-2 space-y-1.5 text-sm leading-relaxed text-foreground/85">
+                    <li>・別の BaaS / 自前バックエンドへの移行</li>
+                    <li>・モバイルアプリ化に向けた UseCase 層の再利用</li>
+                    <li>・Supabase Storage から別ストレージへの差し替え</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Principles */}
+        <section className="border-y bg-muted/30 px-4 py-16 sm:px-6 sm:py-20">
           <div className="mx-auto max-w-5xl space-y-10">
             <header className="max-w-3xl space-y-3">
               <p className="inline-flex items-center gap-2 text-sm font-semibold tracking-wider text-primary uppercase">
@@ -342,6 +409,49 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                       </div>
                     ) : null}
                   </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Code Samples */}
+        <section className="px-4 py-16 sm:px-6 sm:py-20">
+          <div className="mx-auto max-w-5xl space-y-8">
+            <header className="max-w-3xl space-y-3">
+              <p className="inline-flex items-center gap-2 text-sm font-semibold tracking-wider text-primary uppercase">
+                <Code2 className="size-4" aria-hidden />
+                Code In Practice
+              </p>
+              <h2 className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
+                実装の一部から：私の書き方
+              </h2>
+              <p className="text-pretty leading-relaxed text-muted-foreground">
+                上で述べた設計上の意図が、実際のコードでどのように表れているかを、リポジトリから直接抜粋しました。
+                GitHub
+                を開かなくても、ここで温度感を確認していただけます。
+              </p>
+            </header>
+
+            <div className="space-y-10">
+              {project.codeSamples.map((sample, index) => (
+                <article key={sample.filename} className="space-y-4">
+                  <div className="flex items-baseline gap-3">
+                    <span className="font-mono text-[11px] font-medium tracking-wider text-primary/70">
+                      0{index + 1}
+                    </span>
+                    <h3 className="text-lg font-semibold leading-snug text-foreground sm:text-xl">
+                      {sample.title}
+                    </h3>
+                  </div>
+                  <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">
+                    {sample.description}
+                  </p>
+                  <CodeBlock
+                    filename={sample.filename}
+                    language={sample.language}
+                    code={sample.code}
+                  />
                 </article>
               ))}
             </div>

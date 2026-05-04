@@ -17,6 +17,20 @@ export type ProjectPrinciple = {
   tradeoff?: string;
 };
 
+/** 実装抜粋（実コードから直接転記したものだけを置く） */
+export type ProjectCodeSample = {
+  /** 表示用ラベル（小見出し） */
+  title: string;
+  /** ソースのファイルパス（リポジトリ相対） */
+  filename: string;
+  /** シンタックスハイライト用の言語タグ */
+  language: "ts" | "tsx";
+  /** スニペット前の解説（1〜2 文） */
+  description: string;
+  /** 実コードの抜粋（実装と一致している必要がある） */
+  code: string;
+};
+
 export type ProjectConcept = {
   title: string;
   body: string;
@@ -53,6 +67,8 @@ export type ProjectEntry = {
   techStack: TechStackItem[];
   /** 詳細ページ：設計上のこだわり */
   principles: ProjectPrinciple[];
+  /** 詳細ページ：実装からの抜粋（実コードと完全一致） */
+  codeSamples: ProjectCodeSample[];
   /** 詳細ページ：今後の展望 */
   vision: string[];
 };
@@ -215,6 +231,85 @@ export const projects: ProjectEntry[] = [
         ],
         tradeoff:
           "in-memory 実装の二重メンテは増えますが、テスト時間の短縮と「ドメインだけ取り出して語れる」状態を維持できる価値が上回ると判断しました。",
+      },
+    ],
+    codeSamples: [
+      {
+        title: "失敗の種類を「型」で表現する Result 型",
+        filename: "src/types/auth.ts",
+        language: "ts",
+        description:
+          "Discriminated Union として `success: true | false` を分岐させ、try/catch のネストに頼らずに「業務的に意味のある失敗」を呼び出し側へ伝えています。型レベルで成功・失敗のどちらに分岐したかが分かるため、UI 側での扱い忘れを防げます。",
+        code: `import { User } from "@/domain/repositories/auth-repository";
+
+export type AuthResult =
+  | { success: true; user: User }
+  | { success: false; error: string };
+
+export type SignupResult = AuthResult;
+export type LoginResult = AuthResult;`,
+      },
+      {
+        title: "UseCase でバリデーションと永続化を順序立てて束ねる",
+        filename: "src/usecase/auth/signup.usecase.ts",
+        language: "ts",
+        description:
+          "UseCase はビジネスロジックを保持しつつ、Repository のインターフェースだけに依存しています。バリデーションは早期リターン、Repository への呼び出しは Result 型でラップして返し、Server Action 側はこの Result を UI 用メッセージへ変換するだけに留めています。",
+        code: `import { AuthRepository, SignupInput } from "@/domain/repositories/auth-repository";
+import { SignupResult } from "@/types/auth";
+import { isValidEmail, isValidPasswordLength } from "@/utils/validation";
+import { ERROR_MESSAGES } from "@/constants/error-messages";
+
+export class SignupUseCase {
+  constructor(private authRepository: AuthRepository) {}
+
+  async execute(input: SignupInput): Promise<SignupResult> {
+    if (!isValidEmail(input.email)) {
+      return { success: false, error: ERROR_MESSAGES.EMAIL_INVALID_FORMAT };
+    }
+
+    if (!isValidPasswordLength(input.password, 8)) {
+      return { success: false, error: ERROR_MESSAGES.PASSWORD_MIN_LENGTH(8) };
+    }
+
+    const user = await this.authRepository.signup(input);
+    return { success: true, user };
+  }
+}`,
+      },
+      {
+        title: "UseCase を BaaS なしで単体テストする",
+        filename: "src/usecase/auth/signup.usecase.test.ts",
+        language: "ts",
+        description:
+          "Repository をインターフェースで切っているため、Vitest のモックだけで Supabase に依存せず UseCase を単体テストできます。「対象 - 状況 - 期待」の命名で、レビュー時に意図が読みやすくなるようテストケースを揃えています。",
+        code: `describe("SignupUseCase", () => {
+  let mockRepo: AuthRepository;
+
+  beforeEach(() => {
+    mockRepo = {
+      login: vi.fn(),
+      signup: vi.fn().mockResolvedValue(mockUser),
+    };
+  });
+
+  it("メール形式が不正なら success: false でエラーメッセージを返す", async () => {
+    const useCase = new SignupUseCase(mockRepo);
+    const result = await useCase.execute({ email: "invalid", password: "password123" });
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("メールアドレス");
+    expect(mockRepo.signup).not.toHaveBeenCalled();
+  });
+
+  it("バリデーションを通過するとリポジトリを呼び success: true でユーザーを返す", async () => {
+    const useCase = new SignupUseCase(mockRepo);
+    const result = await useCase.execute({ email: "test@example.com", password: "password123" });
+
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.user).toEqual(mockUser);
+  });
+});`,
       },
     ],
     vision: [
