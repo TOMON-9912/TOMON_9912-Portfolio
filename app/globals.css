@@ -124,8 +124,12 @@
   body {
     @apply bg-background text-foreground;
   }
+  /*
+   * Next.js のクライアント遷移で先頭スクロールが走る際、globally smooth だと
+   * 「長〜いスムーズ巻き戻し」のように見えてしまう。そのためスクロールは既定（auto）。
+   */
   html {
     @apply font-sans;
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
   }
 }
