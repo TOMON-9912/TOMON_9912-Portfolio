@@ -233,7 +233,8 @@ GitHub Pages の Jekyll 処理によって `_next/` ディレクトリが除外�
 
 | 表示メッセージの例 | 主な原因 |
 |---|---|
-| `Resource not accessible by integration` | `Settings → Pages` で `Source` が `GitHub Actions` になっていない |
+| `Failed to create deployment (status: 404)` ／ `HttpError: Not Found` ／ `Ensure GitHub Pages has been enabled` | **Pages が未有効、または `Source` が `GitHub Actions` 以外**。`Settings → Pages → Source: GitHub Actions` を選択してから再実行（2-2 を再確認） |
+| `Resource not accessible by integration` | ワークフローの `permissions:` ブロックが欠けている、または `Settings → Pages` で `Source` が `GitHub Actions` になっていない |
 | `Get Pages site failed` | リポジトリで Pages がまだ有効化されていない（2-2 を再確認） |
 | `npm ci` がエラー | `package-lock.json` がコミット漏れ。ローカルで `npm install` 後に追加コミット |
 | TypeScript の型エラー | ローカルで `npm run lint` を実行して再現・修正 |

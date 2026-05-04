@@ -284,33 +284,65 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               <h2 className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
                 設計上のこだわり
               </h2>
+              <p className="text-pretty leading-relaxed text-muted-foreground">
+                個人開発だからこそ、業務では取り切れない「設計判断のトレードオフ」を 1 人で繰り返せる場として位置づけています。**何を採用したか**だけでなく、**何を棄却したか／どのリスクを引き受けたか**まで言語化することを意識しました。
+              </p>
             </header>
-            <div className="grid gap-5 md:grid-cols-3">
+            <div className="grid gap-6 md:grid-cols-2">
               {project.principles.map((principle, index) => (
-                <div
+                <article
                   key={principle.title}
-                  className="relative overflow-hidden rounded-2xl border border-border/80 bg-card p-6 shadow-xs"
+                  className="relative overflow-hidden rounded-2xl border border-border/80 bg-card p-6 shadow-xs sm:p-7"
                 >
-                  <span
+                  <div
                     aria-hidden
-                    className="absolute top-4 right-5 font-mono text-[11px] font-medium tracking-wider text-primary/60"
-                  >
-                    P0{index + 1}
-                  </span>
-                  <h3 className="text-base font-semibold leading-snug text-foreground">
-                    {principle.title}
-                  </h3>
-                  <ul className="mt-4 space-y-2 text-sm leading-relaxed text-muted-foreground">
-                    {principle.bullets.map((b) => (
-                      <li
-                        key={b}
-                        className="border-l-2 border-primary/40 pl-3 text-foreground/85"
-                      >
-                        {b}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                    className="pointer-events-none absolute -top-24 -right-24 size-56 rounded-full bg-primary/5 blur-2xl"
+                  />
+                  <div className="relative space-y-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="rounded-full border border-primary/30 bg-primary/5 px-2.5 py-0.5 text-[11px] font-semibold tracking-wider text-primary uppercase">
+                        Principle 0{index + 1}
+                      </span>
+                      <ShieldCheck
+                        className="size-5 text-primary/70"
+                        aria-hidden
+                      />
+                    </div>
+                    <h3 className="text-lg font-semibold leading-snug text-foreground">
+                      {principle.title}
+                    </h3>
+                    <p className="text-sm leading-relaxed text-muted-foreground">
+                      {principle.description}
+                    </p>
+
+                    <div className="space-y-2 border-t border-border/60 pt-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        具体的に決めたこと
+                      </p>
+                      <ul className="space-y-2 text-sm leading-relaxed text-foreground/85">
+                        {principle.bullets.map((b) => (
+                          <li
+                            key={b}
+                            className="border-l-2 border-primary/40 pl-3"
+                          >
+                            {b}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {principle.tradeoff ? (
+                      <div className="space-y-1.5 rounded-lg border border-dashed border-amber-500/40 bg-amber-50/50 p-4 dark:bg-amber-950/20">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                          トレードオフ／棄却した代替案
+                        </p>
+                        <p className="text-sm leading-relaxed text-foreground/85">
+                          {principle.tradeoff}
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+                </article>
               ))}
             </div>
           </div>

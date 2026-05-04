@@ -7,8 +7,14 @@ export type TechStackItem = {
 };
 
 export type ProjectPrinciple = {
+  /** 一行で言うと何のためのこだわりか */
   title: string;
+  /** 詳細ページの導入文（2〜3 文） */
+  description: string;
+  /** 具体的に決めたこと・採用したパターン */
   bullets: string[];
+  /** トレードオフや、棄却した代替案 */
+  tradeoff?: string;
 };
 
 export type ProjectConcept = {
@@ -141,28 +147,74 @@ export const projects: ProjectEntry[] = [
     ],
     principles: [
       {
-        title: "Clean Architecture",
+        title: "クリーンアーキテクチャで「依存の向き」を物理的に縛る",
+        description:
+          "Presentation / UseCase / Domain / Infrastructure の 4 層を明確に分離し、依存方向は常に内側に向かう設計を貫いています。レビューや「気をつけて」運用に頼らず、設計が崩れる前に仕組みで止めることを優先しています。",
         bullets: [
-          "Domain 層を中心に設計し、UseCase 層でビジネスロジックを管理",
-          "Infrastructure 層で Supabase 依存を隔離し、将来的な技術変更に耐える",
-          "Server Action は UseCase の呼び出しのみに留めて、責務を薄く保つ",
+          "Domain 層を中心に置き、Repository インターフェースで永続化の詳細を隠蔽する",
+          "UseCase 層がビジネスロジックを保持し、Server Action は UseCase の薄い入口に留める",
+          "Infrastructure 層に Supabase 依存を集約し、BaaS を差し替えても影響を 1 層内に閉じ込める",
+          "ESLint の `no-restricted-imports` でレイヤ間の禁則ルールを CI 上で検査し続ける",
+          "Server Component から Repository を直接呼ばない方針を、`_README.md` に明文化",
         ],
+        tradeoff:
+          "「初期実装は素直に書いた方が早い」という意見もありますが、長期保守と技術スタック変更の可能性を踏まえ、短期効率より境界の維持を優先しました。",
       },
       {
-        title: "Multi-Tenant Design",
+        title: "マルチテナント設計の「二重防御」",
+        description:
+          "家族単位での分離は本プロダクトの根幹であり、インフラだけに頼らずドメイン層でも整合性を確認する二重防御を採用しています。家族の食卓に紐づくデータが他家族から見えないことは、機能ではなく前提として扱っています。",
         bullets: [
-          "`family_id` によるデータ分離を全レイヤで強制",
-          "Supabase RLS でアクセス制御",
-          "ドメイン層でも整合性チェックを行い、二重防御を設けている",
+          "すべてのテナント別テーブルに `family_id` を持たせ、Supabase RLS で行レベルのアクセス制御",
+          "ドメインモデルでは家族 ID を値オブジェクトとして扱い、不正な ID 混入を型レベルで阻止",
+          "認証コンテキストの `family_id` と、リクエスト内 `family_id` をユースケース境界で照合",
+          "招待フローは独立した集約として切り出し、メンバーシップの整合性を 1 か所で担保",
+          "「RLS だけに頼らない」という原則を、レビュー観点としても運用ルールに組み込む",
         ],
+        tradeoff:
+          "二重チェックによりコード量と処理ステップが増えますが、家族データの混在は致命的なため、冗長性を引き受ける判断にしています。",
       },
       {
-        title: "Storage Strategy",
+        title: "失敗を「型」で扱う Result 型エラーハンドリング",
+        description:
+          "Domain / UseCase 層では throw を避け、`Result<T, E>` 型で「想定された失敗」を呼び出し側に返す設計を採っています。例外の伝播経路を読まなくても、何が起こり得るかを型から把握できる状態を目指しています。",
         bullets: [
-          "画像データは長期保存を前提に、ストレージ移行に耐える形で抽象化",
-          "画像最適化と、PDF / JSON でのエクスポート機能を実装予定",
-          "サービス終了時にもユーザーがデータを持ち出せる前提で設計",
+          "`types/result.ts` に `Result<T, E>` を定義し、Discriminated Union として扱う",
+          "ドメイン層のエラーは「業務的に意味のある失敗」を `E` 側で表現する",
+          "UseCase 層で複数 Repository の結果を合成し、最終的に Result でラップして返す",
+          "Server Action 境界で UI 向けメッセージへ変換し、try/catch のネストを排除する",
+          "想定外のエラー（インフラ障害など）は throw のままに残し、両者を意図的に分離",
         ],
+        tradeoff:
+          "関数型寄りの記述になるため学習コストはありますが、try/catch の見落としを防げる効果と、レビュー時に「失敗の種類」を一覧できるメリットが上回ると判断しました。",
+      },
+      {
+        title: "「Write Once, Read Forever」を支えるストレージ戦略",
+        description:
+          "家族の味は短期で消費されるコンテンツではなく、世代を越える記憶資産です。短期実装の容易さよりも、長期保存・移行可能性・データ主権を最優先で設計しています。",
+        bullets: [
+          "画像は Supabase Storage に保存しつつ、DB には URL ではなく `path` を持たせて移行容易性を確保",
+          "署名 URL の発行と画像最適化は Infrastructure 層に集約し、UI 層は実装詳細を意識しない",
+          "PDF / JSON エクスポート機能を実装予定とし、ユーザーがデータを持ち出せる前提で設計",
+          "別 BaaS や自前ストレージへ移行する際、Repository の差し替えのみで完結する構造に",
+          "サービス終了時のデータ取り出しまで含めて、運用責任の範囲として明示",
+        ],
+        tradeoff:
+          "短期的には Supabase Storage に密結合した方が実装は楽ですが、ユーザーへの長期的な約束を優先し、抽象化レイヤの維持コストを引き受けています。",
+      },
+      {
+        title: "テスト戦略を「設計レイヤごと」に分けて回す",
+        description:
+          "Vitest を中心に、層ごとに異なる責務でテストを書く方針です。テスト容易性そのものをアーキテクチャの良し悪しの指標として使い、ドメイン整理が崩れたらテストが書きにくくなる、という形で早期検知できる構造を目指しています。",
+        bullets: [
+          "Domain / UseCase は in-memory Repository を用意し、BaaS なしで高速に検証",
+          "Supabase 依存のテストはレイヤを切り分け、RLS の動作確認に責務を絞る",
+          "命名は「対象 - 状況 - 期待」で統一し、レビュー時に論点が見える粒度を維持",
+          "CI ではユニット層を高速に走らせ、変更検出のフィードバックループを短く保つ",
+          "テストが書きづらい状況を「設計の歪みのシグナル」として扱い、放置せず再設計に回す",
+        ],
+        tradeoff:
+          "in-memory 実装の二重メンテは増えますが、テスト時間の短縮と「ドメインだけ取り出して語れる」状態を維持できる価値が上回ると判断しました。",
       },
     ],
     vision: [

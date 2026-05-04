@@ -43,13 +43,13 @@ export function SiteHeader() {
 
         <nav className="hidden items-center gap-1 md:flex">
           {navLinks.map(({ href, label }) => (
-            <a
+            <Link
               key={href}
               href={href}
               className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
             >
               {label}
-            </a>
+            </Link>
           ))}
           <a
             href={siteConfig.qiitaProfileUrl}
@@ -81,14 +81,14 @@ export function SiteHeader() {
                   key={href}
                   nativeButton={false}
                   render={
-                    <a
+                    <Link
                       href={href}
                       className={cn(
                         buttonVariants({ variant: "ghost", className: "justify-start" }),
                       )}
                     >
                       {label}
-                    </a>
+                    </Link>
                   }
                 />
               ))}
